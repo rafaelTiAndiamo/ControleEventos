@@ -1,0 +1,20 @@
+2025-09-29 21:27:00 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2025-09-29 21:27:00 - Started 3680
+2025-09-29 21:29:03 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2025-09-29 21:29:03 - Started 12788
+2025-09-29 21:32:40 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
+2025-09-29 21:32:40 - Started 2056
+2025-09-29 21:32:45 - Stopping controleeventos.exe
+2025-09-29 21:32:45 - ProcessKill 2056
+2025-09-29 21:32:45 - Found child process: 15252 Name: conhost.exe
+2025-09-29 21:32:45 - Found child process: 5704 Name: node.exe
+2025-09-29 21:32:45 - Stopping process 15252
+2025-09-29 21:32:45 - Send SIGINT 15252
+2025-09-29 21:32:45 - SIGINT to 15252 failed - Killing as fallback
+2025-09-29 21:32:45 - Stopping process 5704
+2025-09-29 21:32:45 - Send SIGINT 5704
+2025-09-29 21:32:45 - SIGINT to 5704 failed - Killing as fallback
+2025-09-29 21:32:45 - Stopping process 2056
+2025-09-29 21:32:45 - Send SIGINT 2056
+2025-09-29 21:32:45 - SIGINT to 2056 failed - Killing as fallback
+2025-09-29 21:32:45 - Finished controleeventos.exe
