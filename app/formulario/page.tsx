@@ -2217,30 +2217,31 @@ async function handleGerarPDF(crm: number) {
 
                                           
                                             // 🔹 Garante que `datasLista` seja sempre um array
-                                            const datasListadata = Array.isArray(formData.datasLista)
-                                              ? formData.datasLista
-                                              : (() => {
-                                                  try {
-                                                    return JSON.parse(formData.datasLista || "[]");
-                                                  } catch {
-                                                    return [];
-                                                  }
-                                                })();
+                                            // 🔹 Garante que `datasLista` seja sempre um array
+                                                    const datasListaFormatada = Array.isArray(formData.datasLista)
+                                                  ? formData.datasLista
+                                                  : (() => {
+                                                      try {
+                                                        return JSON.parse(formData.datasLista || "[]");
+                                                      } catch {
+                                                        return [];
+                                                      }
+                                                    })();
 
-                                            // 🔹 Exibe os itens formatados
-                                            return datasListadata.length > 0 ? (
-                                              <div>
-                                                <strong>Datas:</strong>{" "}
-                                                {datasListadata.map((item: any, index: number) => (
-                                                  <span key={index} className="text-sm mr-1">
-                                                    📅 {item.data || "-"} {item.horaInicial || "-"} às {item.horaFinal || "-"}
-                                                    {index < datasListadata.length - 1 ? ", " : ""}
-                                                  </span>
-                                                ))}
-                                              </div>
-                                            ) : (
-                                              <span>-</span>
-                                            );
+                                                    // 🔹 Exibe os itens formatados
+                                                    return datasLista.length > 0 ? (
+                                                      <div>
+                                                        <strong>Datas:</strong>{" "}
+                                                        {datasLista.map((item, index) => (
+                                                          <span key={index} className="text-sm mr-1">
+                                                            📅 {item.data || "-"} {item.horaInicial || "-"} às {item.horaFinal || "-"}
+                                                            {index < datasLista.length - 1 ? ", " : ""}
+                                                          </span>
+                                                        ))}
+                                                      </div>
+                                                    ) : (
+                                                      <span>-</span>
+                                                    );
                                           
                                         })()}
                                       </div>
