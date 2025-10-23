@@ -1,10 +1,37 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Base styles */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}
+
+/* Scrollbar customizada */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 2px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 2px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
 
 .bg-andiamo {
-  background-color: #822009;
+  background-color: #602613;
+}
+.hover\:andiamo:hover {
+  color: #602613;
 }
 /* Scrollbar customizada */
 .scrollbar-thin::-webkit-scrollbar {

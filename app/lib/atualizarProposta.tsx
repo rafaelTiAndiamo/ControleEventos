@@ -1,9 +1,9 @@
 import { google } from "googleapis";
 import { FormDataType } from "./types"; // ajuste o path conforme sua estrutura
+import { CamposDataHora } from "./types";
 
 export async function atualizarProposta(formData: FormDataType): Promise<{ success: boolean; message?: string }> {
   try {
-    // Autenticação Google Sheets
     const auth = new google.auth.GoogleAuth({
       credentials: {
         client_email: process.env.GOOGLE_CLIENT_EMAIL,
@@ -13,12 +13,17 @@ export async function atualizarProposta(formData: FormDataType): Promise<{ succe
     });
 
     const sheets = google.sheets({ version: "v4", auth });
-
-    const crm = formData.crm;
+    const crm = String(formData.crm).trim(); // remove espaços extras
 
     // ========================
     // 1️⃣ Atualiza ou cria CLIENTE
     // ========================
+    const datasJson = JSON.stringify(
+      (formData.datasLista || []).map((d: string | CamposDataHora) =>
+        typeof d === "string" ? { data: d, horaInicial: "", horaFinal: "" } : d
+      )
+    );
+
     const clienteValues = [[
       crm,
       formData.cliente || "-",
@@ -29,39 +34,37 @@ export async function atualizarProposta(formData: FormDataType): Promise<{ succe
       formData.evento || "-",
       formData.endereco || "-",
       formData.qtdPessoas || "-",
-      formData.dataInicial || "-",
-      formData.dataFinal || "-",
-      formData.horaInicial || "-",
-      formData.horaFinal || "-",
-      
+      datasJson,
+      formData.indicacao || "-",
+      formData.observacao || "-",
+      formData.dataCriacao || "-",
+      formData.dataAlteracao || "-",
     ]];
 
-    // Busca linha pelo CRM
+    // Lê todos os clientes
     const clienteSheet = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "PROPOSTAS_clientes!A:A",
+      range: "PROPOSTAS_clientes!A:N",
+    });
+    const clienteRows = clienteSheet.data.values || [];
+
+    // Mantém apenas clientes diferentes do CRM atual
+    const rowsToKeepCliente = clienteRows.filter(row => row[0] !== crm);
+
+    // Limpa a aba de clientes
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "PROPOSTAS_clientes!A:N",
     });
 
-    const rows = clienteSheet.data.values || [];
-    const rowIndex = rows.findIndex(r => r[0] === crm);
-
-    if (rowIndex !== -1) {
-      // Atualiza linha existente
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: `PROPOSTAS_clientes!A${rowIndex + 1}:M${rowIndex + 1}`,
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: clienteValues },
-      });
-    } else {
-      // Insere nova linha
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "PROPOSTAS_clientes!A:M",
-        valueInputOption: "USER_ENTERED",
-        requestBody: { values: clienteValues },
-      });
-    }
+    // Insere os clientes antigos + o CRM atualizado
+    const allClienteValues = [...rowsToKeepCliente, ...clienteValues];
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "PROPOSTAS_clientes!A:N",
+      valueInputOption: "RAW",
+      requestBody: { values: allClienteValues },
+    });
 
     // ========================
     // 2️⃣ Atualiza itens da proposta
@@ -70,38 +73,27 @@ export async function atualizarProposta(formData: FormDataType): Promise<{ succe
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "PROPOSTAS_itens!A:F",
     });
-
     const allRows = itensSheet.data.values || [];
-    // Mantém só itens de outros CRMs
-    const rowsToKeep = allRows.filter(row => row[0] !== crm);
 
-    // Prepara novos itens
-    const operacionalValues = formData.operacional.itens.map(item => [
-      crm, "OPERACIONAL", "-", item.nome, item.qtd, item.valor
-    ]);
+    // Mantém apenas os itens de outros CRMs
+    const rowsToKeepItens = allRows.filter(row => row[0] !== crm);
 
-    const alimentacaoValues = formData.alimentacaoStaff.itens.map(item => [
-      crm, "ALIMENTACAOSTAFF", item.codigo, item.nome,  "-",  "-",
-    ]);
+    // Prepara novos itens do CRM atual
+    const novosItens = [
+      ...formData.operacional.itens.map(i => [crm, "OPERACIONAL", "-", i.nome, i.qtd, i.valor]),
+      ...formData.alimentacaoStaff.itens.map(i => [crm, "ALIMENTACAOSTAFF", i.codigo, i.nome, "-", i.valor]),
+      ...Object.entries(formData.equipe).flatMap(([categoria, membros]) =>
+        membros.map(m => [crm, categoria, "-", m.cargo, m.qtd, m.valor])
+      ),
+      ...formData.servicosExtras.map(i => [crm, "SERVIÇOS EXTRAS", "-", i.nome, "-", i.valor]),
+      ...Object.entries(formData.cardapio).flatMap(([categoria, itens]) =>
+        itens.map(i => [crm, categoria, i.codigo, i.nome, i.qtd, i.qtdTotal || ""])
+      ),
+    ];
 
+    const allValues = [...rowsToKeepItens, ...novosItens];
 
-    const equipeValues = Object.entries(formData.equipe).flatMap(
-      ([categoria, membros]) =>
-        membros.map(membro => [crm, categoria, "-", membro.cargo, membro.qtd, membro.valor])
-    );
-
-    const servicosValues = formData.servicosExtras.map(item => [
-      crm, "SERVIÇOS EXTRAS", "-", item.nome, "-", item.valor
-    ]);
-
-    const cardapioValues = Object.entries(formData.cardapio).flatMap(
-      ([categoria, itens]) =>
-        itens.map(item => [crm, categoria, item.codigo, item.nome, item.qtd])
-    );
-
-    const allValues = [...rowsToKeep, ...operacionalValues, ...alimentacaoValues, ...equipeValues, ...servicosValues, ...cardapioValues];
-
-    // Limpa aba e insere tudo
+    // Limpa a aba inteira de itens
     await sheets.spreadsheets.values.clear({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "PROPOSTAS_itens!A:F",
@@ -111,7 +103,7 @@ export async function atualizarProposta(formData: FormDataType): Promise<{ succe
       await sheets.spreadsheets.values.append({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
         range: "PROPOSTAS_itens!A:F",
-        valueInputOption: "USER_ENTERED",
+        valueInputOption: "RAW",
         requestBody: { values: allValues },
       });
     }

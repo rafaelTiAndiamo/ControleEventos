@@ -1,21 +1,21 @@
+// app/layout.tsx
 import "./globals.css";
-import Image from "next/image";
-import Sidebar from "./sidebar";
+import { ReactNode } from "react";
+import { UserProvider } from "@/components/ui/UserContext";
+import AppLayout from "./appLayout"; // <-- componente cliente
 
 export const metadata = {
-  title: "Controle Eventos Andiamo",
-  description: "Exemplo Next.js com menu e páginas",
+  title: "Meu App",
+  description: "Sistema com painel e autenticação",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body className="flex h-screen">
-        {/* MENU LATERAL */}
-        <Sidebar />
-
-        {/* CONTEÚDO DA PÁGINA */}
-        <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      <body className="bg-gray-400">
+        <UserProvider>
+          <AppLayout>{children}</AppLayout>
+        </UserProvider>
       </body>
     </html>
   );

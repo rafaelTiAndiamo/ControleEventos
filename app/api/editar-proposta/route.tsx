@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { CamposDataHora } from "../../lib/types";
 import type { FormDataType } from "../../lib/types"
 
 // Tipagem das linhas da planilha
@@ -12,6 +13,7 @@ interface ItemPlanilha {
   qtd?: string;
   codigo?: string;
   grupo?: string;
+  qtdTotal?: string;
 }
 
 // Conexão com Google Sheets
@@ -37,12 +39,20 @@ function mapPlanilhaToFormData(clienteRow: string[], itensRows: ItemPlanilha[]):
   const m = totalMinutes % 60;
   return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}`;
 };
-  const crm = clienteRow[0];
-  console.log("data Inicial:" + clienteRow[9]);
-  console.log("data Final:" + clienteRow[10]);
-  console.log("DEBUG horaInicial raw:", clienteRow[11]);
-  console.log("DEBUG horaFinal raw:", clienteRow[12]);
+  const crm = Number(clienteRow[0]);
+ 
 
+  let datasLista: CamposDataHora[] = [];
+
+    if (clienteRow[9]) {
+      try {
+        datasLista = JSON.parse(clienteRow[9]) as CamposDataHora[];
+      } catch (err) {
+        console.error("Erro ao parsear datasLista:", err);
+        datasLista = [];
+      }
+    }
+    
   return {
     crm,
     cliente: clienteRow[1] || "",
@@ -53,32 +63,34 @@ function mapPlanilhaToFormData(clienteRow: string[], itensRows: ItemPlanilha[]):
     evento: clienteRow[6] || "",
     endereco: clienteRow[7] || "",
     qtdPessoas: clienteRow[8] || "",
-    dataInicial: clienteRow[9] || "",
-    dataFinal: clienteRow[10] || "",
-    horaInicial: clienteRow[11] || "",
-    horaFinal: clienteRow[12] || "",
+    datasLista,
+    observacao: clienteRow[11] || "",
+    indicacao: clienteRow[10] || "",
+    dataCriacao: clienteRow[12] || "",
+    dataAlteracao: clienteRow[13] || "",
+        
     
-    observacao: "",
     operacional: { itens: itensRows.filter(i => i.tipo === "OPERACIONAL").map(i => ({ nome: i.nome!, qtd: i.qtd!, valor: i.valor!, grupo: i.grupo! })) },
-    alimentacaoStaff: { itens: itensRows.filter(i => i.tipo === "ALIMENTACAOSTAFF").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })) },
+    alimentacaoStaff: { itens: itensRows.filter(i => i.tipo === "ALIMENTACAOSTAFF").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valor: i.valor! })) },
     equipe: {
       "EQUIPE PRÉ": itensRows.filter(i => i.tipo === "EQUIPE PRÉ").map(i => ({ cargo: i.cargo!, qtd: i.qtd!, valor: i.valor! })),
       "EQUIPE SALÃO": itensRows.filter(i => i.tipo === "EQUIPE SALÃO").map(i => ({ cargo: i.cargo!, qtd: i.qtd!, valor: i.valor! })),
       "EQUIPE COZINHA": itensRows.filter(i => i.tipo === "EQUIPE COZINHA").map(i => ({ cargo: i.cargo!, qtd: i.qtd!, valor: i.valor! })),
       "EQUIPE LOGISTICA": itensRows.filter(i => i.tipo === "EQUIPE LOGISTICA").map(i => ({ cargo: i.cargo!, qtd: i.qtd!, valor: i.valor! })),
     },
-    servicosExtras: itensRows.filter(i => i.tipo === "SERVIÇOS EXTRAS").map(i => ({ nome: i.nome!, descricao: i.descricao || "", valor: i.valor! })),
+    servicosExtras: itensRows.filter(i => i.tipo === "SERVIÇOS EXTRAS").map(i => ({ nome: i.nome!, descricao: i.descricao || "", valor: i.valor!})),
+    extras: itensRows.filter(i => i.tipo === "EXTRAS").map(i => ({ nome: i.nome!, qtd: i.descricao || "", valor: i.valor!})),
     cardapio: {
-      SOFT: itensRows.filter(i => i.tipo === "SOFT").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      CANAPÉ: itensRows.filter(i => i.tipo === "CANAPÉ").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      "PRATO PRINCIPAL": itensRows.filter(i => i.tipo === "PRATO PRINCIPAL").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      ILHA: itensRows.filter(i => i.tipo === "ILHA").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      "SOBREMESA|FRUTA": itensRows.filter(i => i.tipo === "SOBREMESA|FRUTA").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      EXTRA: itensRows.filter(i => i.tipo === "EXTRA").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      ANTIPASTO: itensRows.filter(i => i.tipo === "ANTIPASTO").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      SALADAS: itensRows.filter(i => i.tipo === "SALADAS").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
-      ACOMPANHAMENTOS: itensRows.filter(i => i.tipo === "ACOMPANHAMENTOS").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo! })),
+      SOFT: itensRows.filter(i => i.tipo === "SOFT").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
+      CANAPÉ: itensRows.filter(i => i.tipo === "CANAPÉ").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
+      "PRATO PRINCIPAL": itensRows.filter(i => i.tipo === "PRATO PRINCIPAL").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "" , qtdTotal: i.qtdTotal! })),
+      ILHA: itensRows.filter(i => i.tipo === "ILHA").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
+      "SOBREMESA|FRUTA": itensRows.filter(i => i.tipo === "SOBREMESA|FRUTA").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal! })),
+      ANTIPASTO: itensRows.filter(i => i.tipo === "ANTIPASTO").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
+      SALADAS: itensRows.filter(i => i.tipo === "SALADAS").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
+      ACOMPANHAMENTOS: itensRows.filter(i => i.tipo === "ACOMPANHAMENTOS").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
     },
+    
   };
 }
 
@@ -95,7 +107,7 @@ export async function GET(req: NextRequest) {
     // Lê cliente
     const clienteSheet = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "PROPOSTAS_clientes!A:M",
+      range: "PROPOSTAS_clientes!A:P",
     });
     const clienteRows = clienteSheet.data.values || [];
     const clienteRow = clienteRows.find(r => r[0] === crm);
@@ -114,6 +126,7 @@ export async function GET(req: NextRequest) {
       qtd: r[4],
       valor: r[5],
       cargo: r[3],
+      qtdTotal: r[5],
       
     }));
 

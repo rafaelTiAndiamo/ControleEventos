@@ -1,0 +1,15 @@
+{
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html",
+    "javascript": "javascript",
+    "javascriptreact": "javascript",
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["tw`([^`]*)", "(?:'|\")([^'\"]*)"]
+  ],
+  "css.validate": false,
+  "scss.validate": false,
+  "less.validate": false
+}

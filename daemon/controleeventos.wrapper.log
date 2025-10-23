@@ -1,20 +1,48 @@
-2025-09-29 21:27:00 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
-2025-09-29 21:27:00 - Started 3680
-2025-09-29 21:29:03 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
-2025-09-29 21:29:03 - Started 12788
-2025-09-29 21:32:40 - Starting C:\Program Files\nodejs\node.exe  --harmony C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.25 --wait 1 --maxrestarts 3 --abortonerror n --stopparentfirst undefined
-2025-09-29 21:32:40 - Started 2056
-2025-09-29 21:32:45 - Stopping controleeventos.exe
-2025-09-29 21:32:45 - ProcessKill 2056
-2025-09-29 21:32:45 - Found child process: 15252 Name: conhost.exe
-2025-09-29 21:32:45 - Found child process: 5704 Name: node.exe
-2025-09-29 21:32:45 - Stopping process 15252
-2025-09-29 21:32:45 - Send SIGINT 15252
-2025-09-29 21:32:45 - SIGINT to 15252 failed - Killing as fallback
-2025-09-29 21:32:45 - Stopping process 5704
-2025-09-29 21:32:45 - Send SIGINT 5704
-2025-09-29 21:32:45 - SIGINT to 5704 failed - Killing as fallback
-2025-09-29 21:32:45 - Stopping process 2056
-2025-09-29 21:32:45 - Send SIGINT 2056
-2025-09-29 21:32:45 - SIGINT to 2056 failed - Killing as fallback
-2025-09-29 21:32:45 - Finished controleeventos.exe
+2025-10-01 12:32:30 - Starting C:\Program Files\nodejs\node.exe  --harmony --max_old_space_size=4096 C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.5 --wait 2 --maxrestarts 5 --abortonerror n --stopparentfirst undefined
+2025-10-01 12:32:30 - Started 13968
+2025-10-01 13:59:06 - Stopping controleeventos.exe
+2025-10-01 13:59:06 - ProcessKill 13968
+2025-10-01 13:59:07 - Shutdown exception
+Message:O sistema está sendo desligado.
+
+Stacktrace:   em System.Runtime.InteropServices.Marshal.ThrowExceptionForHRInternal(Int32 errorCode, IntPtr errorInfo)
+   em System.Management.ManagementScope.InitializeGuts(Object o)
+   em System.Management.ManagementScope.Initialize()
+   em System.Management.ManagementObjectSearcher.Initialize()
+   em System.Management.ManagementObjectSearcher.Get()
+   em winsw.WrapperService.GetChildPids(Int32 pid)
+   em winsw.WrapperService.StopProcessAndChildren(Int32 pid)
+   em winsw.WrapperService.StopIt()
+   em winsw.WrapperService.OnShutdown()
+2025-10-01 14:00:14 - Starting C:\Program Files\nodejs\node.exe  --harmony --max_old_space_size=4096 C:\Users\rafael.silva\Documents\webbuffet\node_modules\node-windows\lib\wrapper.js --file C:\Users\rafael.silva\Documents\webbuffet\server.js --scriptoptions= --log "ControleEventos wrapper" --grow 0.5 --wait 2 --maxrestarts 5 --abortonerror n --stopparentfirst undefined
+2025-10-01 14:00:14 - Started 6676
+2025-10-01 14:04:45 - Stopping controleeventos.exe
+2025-10-01 14:04:45 - ProcessKill 6676
+2025-10-01 14:04:45 - Found child process: 6732 Name: conhost.exe
+2025-10-01 14:04:45 - Found child process: 7560 Name: node.exe
+2025-10-01 14:04:45 - Stopping process 6732
+2025-10-01 14:04:45 - Send SIGINT 6732
+2025-10-01 14:04:45 - SIGINT to 6732 failed - Killing as fallback
+2025-10-01 14:04:45 - Found child process: 7740 Name: cmd.exe
+2025-10-01 14:04:45 - Found child process: 7760 Name: conhost.exe
+2025-10-01 14:04:45 - Found child process: 7828 Name: node.exe
+2025-10-01 14:04:45 - Stopping process 7760
+2025-10-01 14:04:45 - Send SIGINT 7760
+2025-10-01 14:04:45 - SIGINT to 7760 failed - Killing as fallback
+2025-10-01 14:04:46 - Stopping process 7828
+2025-10-01 14:04:46 - Send SIGINT 7828
+2025-10-01 14:04:46 - SIGINT to 7828 failed - Killing as fallback
+2025-10-01 14:04:46 - Stopping process 7740
+2025-10-01 14:04:46 - Send SIGINT 7740
+2025-10-01 14:04:46 - SIGINT to 7740 failed - Killing as fallback
+2025-10-01 14:04:46 - Stopping process 7560
+2025-10-01 14:04:46 - Send SIGINT 7560
+2025-10-01 14:04:46 - SIGINT to 7560 failed - Killing as fallback
+2025-10-01 14:04:46 - Stop exception
+Message:Acesso negado
+Stacktrace:   em System.Diagnostics.Process.Kill()
+   em winsw.WrapperService.StopProcess(Int32 pid)
+   em winsw.WrapperService.StopProcessAndChildren(Int32 pid)
+   em winsw.WrapperService.StopProcessAndChildren(Int32 pid)
+   em winsw.WrapperService.StopIt()
+   em winsw.WrapperService.OnStop()

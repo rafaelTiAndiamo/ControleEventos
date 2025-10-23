@@ -35,7 +35,6 @@ export default function ItemCulinariaInput({ item, index, tab, updateItem, remov
     "PRATO PRINCIPAL": "",
     ILHA: "",
     "SOBREMESA|FRUTA": "",
-    EXTRA: "",
     ANTIPASTO: "",
     SALADAS: "",
     ACOMPANHAMENTOS: "",
@@ -125,14 +124,7 @@ export default function ItemCulinariaInput({ item, index, tab, updateItem, remov
 
   return (
     <div className="grid grid-cols-8 gap-2 mb-2 relative" ref={dropdownRef}>
-      <input
-        type="text"
-        disabled
-        placeholder="Código"
-        className="border p-2 rounded col-span-1 w-full"
-        value={item.codigo ?? ""}
-        onChange={e => updateItem(tab, index, "codigo", e.target.value)}
-      />
+      
       <input
         type="text"
         placeholder="Nome"
@@ -155,6 +147,13 @@ export default function ItemCulinariaInput({ item, index, tab, updateItem, remov
         className="border p-2 rounded col-span-1 w-full"
         value={item.qtd ?? ""}
         onChange={e => updateItem(tab, index, "qtd", e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Qtd Total"
+        className="border p-2 rounded col-span-1 w-full"
+        value={item.qtdTotal ?? ""}
+        onChange={e => updateItem(tab, index, "qtdTotal", e.target.value)}
       />
       
       <Button className="col-span-1 w-full flex justify-center" variant="destructive" onClick={() => removeItem(tab, index)}>

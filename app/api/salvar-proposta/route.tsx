@@ -1,4 +1,4 @@
-import { ItemAlimentacao, ItemCardapio, ItemEquipe, ItemOperacional, ItemServicoExtra } from "@/app/lib/types";
+import { ItemAlimentacao, ItemCardapio, ItemEquipe, ItemExtra, ItemOperacional, ItemServicoExtra, CamposDataHora } from "@/app/lib/types";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 
@@ -51,7 +51,22 @@ export async function POST(req: Request) {
     // =======================
     // 1) Salvar CLIENTE / EVENTO
     // =======================
+
+   
+
+
+    const datasJson = JSON.stringify(
+  (formData.datasLista || []).map((d: string | CamposDataHora) =>
+    typeof d === "string"
+      ? { data: d, horaInicial: "", horaFinal: "" }
+      : d
+  )
+);
+
+console.log("datasJson:", datasJson);
+
     const clienteValues = [[
+
       crm,
       formData.cliente || "-",
       formData.cnpj || "-",
@@ -61,10 +76,11 @@ export async function POST(req: Request) {
       formData.evento || "-",
       formData.endereco || "-",
       formData.qtdPessoas || "-",
-      formData.dataInicial || "-",
-      formData.dataFinal || "-",
-      formData.horaInicial || "-",
-      formData.horaFinal || "-",
+      datasJson,
+      formData.indicacao || "-",
+      formData.observacao || "-",
+      new Date().toLocaleString("pt-BR") || "-",
+      new Date().toLocaleString("pt-BR") || "-",
       
     ]];
 
@@ -72,7 +88,7 @@ export async function POST(req: Request) {
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "PROPOSTAS_clientes", // só a aba é suficiente
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: { values: clienteValues },
     });
     // =======================
@@ -121,6 +137,16 @@ export async function POST(req: Request) {
       item.valor,
     ]);
 
+    // Serviços extras
+    const extrasValues = formData.extras.map((item: ItemExtra) => [
+      crm,
+      "EXTRAS",
+      "-",
+      item.nome,
+      item.qtd,
+      item.valor,
+    ]);
+
     // Cardápio
     const cardapioValues = Object.entries(formData.cardapio as ItemCardapio).flatMap(
       ([categoria, itens]) =>
@@ -130,6 +156,7 @@ export async function POST(req: Request) {
           item.codigo,
           item.nome,
           item.qtd,
+          item.qtdTotal
         ])
     );
 
@@ -138,13 +165,14 @@ export async function POST(req: Request) {
       ...equipeValues,
       ...servicosValues,
       ...cardapioValues,
-      ...alimentacaoValues
+      ...alimentacaoValues,
+      ...extrasValues
     ];
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "PROPOSTAS_itens!A:E",
-      valueInputOption: "USER_ENTERED",
+      valueInputOption: "RAW",
       requestBody: { values: allValues },
     });
 
