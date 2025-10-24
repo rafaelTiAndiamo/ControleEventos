@@ -24,8 +24,8 @@ export function useAuthUser() {
       return;
     }
 
-    // Afirmar que db é Firestore (TypeScript já sabe que não é null após a verificação)
-    const firestore: Firestore = db;
+    // Forçar o TypeScript a reconhecer db como Firestore
+    const firestore = db as Firestore;
 
     console.log("useAuthUser: Iniciando onAuthStateChanged");
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {

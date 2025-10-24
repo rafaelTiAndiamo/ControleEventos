@@ -1,4 +1,5 @@
-"use client";
+// app/login/LoginPageInner.tsx
+"use client"; // Garante que o componente roda no lado do cliente
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -6,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { useUser } from "@/components/ui/UserContext";
 import { db, auth } from "@/lib/firebaseConfig";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { signOut } from "firebase/auth";
+import { collection, query, where, getDocs, Firestore } from "firebase/firestore";
 import Image from "next/image";
 
 export default function LoginPageInner() {
@@ -17,7 +17,7 @@ export default function LoginPageInner() {
   const [erro, setErro] = useState("");
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams(); // agora seguro
+  const searchParams = useSearchParams();
   const { setUser } = useUser();
   const { user, userData, login } = useAuthUser();
 
@@ -55,11 +55,20 @@ export default function LoginPageInner() {
       return;
     }
 
+    if (!auth || !db) {
+      setErro("Firebase não inicializado");
+      setLoading(false);
+      return;
+    }
+
+    // Forçar o TypeScript a reconhecer db como Firestore
+    const firestore: Firestore = db;
+
     try {
       const userCredential = await login(email, senha);
       const firebaseUser = userCredential.user;
 
-      const usersRef = collection(db, "users");
+      const usersRef = collection(firestore, "users"); // Linha 62
       const q = query(usersRef, where("email", "==", firebaseUser.email));
       const querySnap = await getDocs(q);
 
