@@ -1,6 +1,6 @@
 "use client";
 
-import Navbar from "@/app/navbar";
+import Navbar from "./navbar";
 import Sidebar from "./sidebar";
 import { useUser } from "@/components/ui/UserContext";
 import { ReactNode } from "react";
