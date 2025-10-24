@@ -20,10 +20,15 @@ export interface ItemAlimentacao {
 
 import jsPDF from "jspdf";
 
+
 declare module "jspdf" {
+  interface LastAutoTable {
+    finalY: number;
+    [key: string]: unknown; // permite outras propriedades sem usar 'any'
+  }
+
   interface jsPDF {
-    autoTable(options: any): jsPDF;
-    lastAutoTable?: any;
+    lastAutoTable?: LastAutoTable;
   }
 }
 
@@ -33,7 +38,7 @@ export interface Proposta {
   email: string;
   telefone: string;
   indicacao: string;
-  crm: Number;
+  crm: number;
   evento: string;
   menu: string[];
   endereco: string;
@@ -78,7 +83,7 @@ export interface FormDataType {
   email: string;
   telefone: string;
   indicacao: string;
-  crm: Number;
+  crm: number;
   evento: string;
   menus: string[];
   endereco: string;

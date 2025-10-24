@@ -87,11 +87,11 @@ export default function Eventos() {
   const [isEditando, setIsEditando] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [loadingId, setLoadingId] = useState<Number | null>(null);
+  const [loadingId, setLoadingId] = useState<number | null>(null);
   type openComponent = {
   title: string;
   children: React.ReactNode;
-  defaultOpen?: Boolean;
+  defaultOpen?: boolean;
   };
 
 function Section({ title, children, defaultOpen  = false}: openComponent) {
@@ -129,12 +129,12 @@ function Section({ title, children, defaultOpen  = false}: openComponent) {
     dataAlteracao: proposta.dataAlteracao || "",
     dataCriacao: proposta.dataCriacao || "",
     // 🔽 Aqui está o ajuste importante:
-    datasLista: (proposta.datasLista || []).map((d: any) =>
+    datasLista: (proposta.datasLista || []).map((d: string | CamposDataHora): CamposDataHora =>
       typeof d === "string"
         ? { data: d, horaInicial: "", horaFinal: "" } // converte string → objeto
         : d
     ),
-    observacao: proposta.observacao || "",
+        observacao: proposta.observacao || "",
     operacional: {
       itens: Array.isArray(proposta.operacional?.itens) ? proposta.operacional.itens : [],
     },
@@ -577,7 +577,7 @@ const propostasFiltradas = propostas.filter((p) => {
     }
   };
 
-async function handleDuplicar(crm: Number) {
+async function handleDuplicar(crm: number) {
   setLoadingId(crm); // ativa barra de carregamento para esse botão
   try {
     const res = await fetch(`/api/duplicar-proposta?crm=${crm}`);
@@ -623,7 +623,7 @@ const calcularTotalItem = (qtd: string, qtdPessoas: string, valorPorPax: string)
   return (Number(qtd) || 0) * (Number(qtdPessoas) || 0) * (Number(valorPorPax) || 0);
 };
 // Função para gerar orçamento (abre modal em vez de PDF)
-async function handleOrcamento(crm: Number) {
+async function handleOrcamento(crm: number) {
   setLoadingId(crm);
   try {
     // 1️⃣ Buscar dados da proposta
@@ -755,15 +755,26 @@ const updateEquipeItem = (
   });
 };
 
-const updateAlimentacaoStaffItem = (idx: number, field: string, value: any) => {
-  setSelectedProposta((prev: any) => {
+const updateAlimentacaoStaffItem = (
+  idx: number,
+  field: keyof ItemAlimentacao,
+  value: string | number
+) => {
+  setSelectedProposta((prev: FormDataType | null) => {
+    if (!prev) return prev; // prev pode ser null
+    if (!prev.alimentacaoStaff?.itens) return prev;
+
     const nova = { ...prev };
-    if (!nova.alimentacaoStaff?.itens) return nova;
-    nova.alimentacaoStaff.itens = [...nova.alimentacaoStaff.itens];
+    nova.alimentacaoStaff = {
+      ...prev.alimentacaoStaff,
+      itens: [...prev.alimentacaoStaff.itens],
+    };
+
     nova.alimentacaoStaff.itens[idx] = {
       ...nova.alimentacaoStaff.itens[idx],
       [field]: value,
     };
+
     return nova;
   });
 };
@@ -999,65 +1010,67 @@ async function handleGerarPDF(crm: number) {
     currentY += 8;
 
     // ===============================
-    // 📋 Dados principais
-    // ===============================
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("Dados do Cliente", 10, currentY);
-    currentY += 4;
+// 📋 Dados principais
+// ===============================
+doc.setFontSize(13);
+doc.setFont("helvetica", "bold");
+doc.text("Dados do Cliente", 10, currentY);
+currentY += 4;
 
-    const dados = [
-      ["Cliente", proposta.cliente || "-"],
-      ["CNPJ", proposta.cnpj || "-"],
-      ["Email", proposta.email || "-"],
-      ["Telefone", proposta.telefone || "-"],
-      ["Evento", proposta.evento || "-"],
-      ["Endereço", proposta.endereco || "-"],
-      ["Qtd. Pessoas", proposta.qtdPessoas || "-"],
-      ["Indicação", proposta.indicacao || "-"],
-      ["Data Criação", proposta.dataCriacao || "-"],
-      ["Data Alteração", proposta.dataAlteracao || "-"],
-      ["Menus", proposta.menus?.join(", ") || "-"],
-    ];
+const dados: [string, string][] = [
+  ["Cliente", proposta.cliente || "-"],
+  ["CNPJ", proposta.cnpj || "-"],
+  ["Email", proposta.email || "-"],
+  ["Telefone", proposta.telefone || "-"],
+  ["Evento", proposta.evento || "-"],
+  ["Endereço", proposta.endereco || "-"],
+  ["Qtd. Pessoas", proposta.qtdPessoas || "-"],
+  ["Indicação", proposta.indicacao || "-"],
+  ["Data Criação", proposta.dataCriacao || "-"],
+  ["Data Alteração", proposta.dataAlteracao || "-"],
+  ["Menus", proposta.menus?.join(", ") || "-"],
+];
 
-    autoTable(doc, {
-      startY: currentY,
-      body: dados,
-      theme: "striped",
-      styles: { fontSize: 10, cellPadding: 2, textColor: 30 },
-      columnStyles: { 0: { fontStyle: "bold", textColor: accentColor } },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      margin: { left: 10, right: 10 },
-    });
+autoTable(doc, {
+  startY: currentY,
+  body: dados,
+  theme: "striped",
+  styles: { fontSize: 10, cellPadding: 2, textColor: 30 },
+  columnStyles: { 0: { fontStyle: "bold", textColor: accentColor } },
+  alternateRowStyles: { fillColor: [245, 247, 250] },
+  margin: { left: 10, right: 10 },
+});
 
-    currentY = (doc as any).lastAutoTable.finalY + 10;
+currentY = doc.lastAutoTable?.finalY ?? currentY;
+currentY += 10;
 
-    // ===============================
-    // 📅 Datas do evento
-    // ===============================
-    if (proposta.datasLista?.length > 0) {
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text("Datas do Evento", 10, currentY);
-      currentY += 4;
+// ===============================
+// 📅 Datas do evento
+// ===============================
+if (proposta.datasLista?.length > 0) {
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("Datas do Evento", 10, currentY);
+  currentY += 4;
 
-      const datas = proposta.datasLista.map((item: any) => [
-        item.data || "-",
-        `${item.horaInicial || "-"} às ${item.horaFinal || "-"}`,
-      ]);
+  const datas: [string, string][] = (proposta.datasLista as CamposDataHora[]).map((item) => [
+    item.data || "-",
+    `${item.horaInicial || "-"} às ${item.horaFinal || "-"}`,
+  ]);
 
-      autoTable(doc, {
-        startY: currentY,
-        head: [["Data", "Horário"]],
-        body: datas,
-        styles: { fontSize: 10 },
-        headStyles: { fillColor: accentColor, textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-        margin: { left: 10, right: 10 },
-      });
+  autoTable(doc, {
+    startY: currentY,
+    head: [["Data", "Horário"]],
+    body: datas,
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: accentColor, textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    margin: { left: 10, right: 10 },
+  });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
-    }
+  currentY = doc.lastAutoTable?.finalY ?? currentY;
+  currentY += 10;
+}
 
     // ===============================
     // 👥 Equipe
@@ -1073,13 +1086,14 @@ async function handleGerarPDF(crm: number) {
       autoTable(doc, {
         startY: currentY,
         head: [["Cargo", "Qtd", "Valor"]],
-        body: membros.map((m: any) => [m.cargo, m.qtd, m.valor]),
+        body: (membros as ItemEquipe[]).map((m) => [m.cargo, m.qtd, m.valor]),
         headStyles: { fillColor: accentColor, textColor: 255 },
         styles: { fontSize: 9 },
         alternateRowStyles: { fillColor: [245, 247, 250] },
       });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      currentY = doc.lastAutoTable?.finalY ?? currentY;
+      currentY += 10;
     }
 
     // ===============================
@@ -1096,16 +1110,18 @@ async function handleGerarPDF(crm: number) {
       autoTable(doc, {
         startY: currentY,
         head: [["Código", "Nome", "Qtd", "Qtd Total"]],
-        body: itens.map((i: any) => [i.codigo, i.nome, i.qtd, i.qtdTotal]),
+        body: (itens as ItemCardapio[]).map((i) => [i.codigo, i.nome, i.qtd, i.qtdTotal]),
         headStyles: { fillColor: accentColor, textColor: 255 },
         styles: { fontSize: 9 },
         alternateRowStyles: { fillColor: [245, 247, 250] },
       });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      // ✅ Usa lastAutoTable tipado
+      currentY = doc.lastAutoTable?.finalY ?? currentY;
+      currentY += 10;
     }
 
-    // ===============================
+   // ===============================
     // ⚙️ Operacional
     // ===============================
     if (proposta.operacional?.itens?.length) {
@@ -1117,12 +1133,14 @@ async function handleGerarPDF(crm: number) {
       autoTable(doc, {
         startY: currentY,
         head: [["Nome", "Qtd", "Valor"]],
-        body: proposta.operacional.itens.map((i: any) => [i.nome, i.qtd, i.valor]),
+        body: proposta.operacional.itens.map((i: ItemOperacional) => [i.nome, i.qtd, i.valor]),
         headStyles: { fillColor: accentColor, textColor: 255 },
         alternateRowStyles: { fillColor: [245, 247, 250] },
       });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      // ✅ Usa o tipo definido para lastAutoTable
+      currentY = doc.lastAutoTable?.finalY ?? currentY;
+      currentY += 10;
     }
 
     // ===============================
@@ -1137,33 +1155,37 @@ async function handleGerarPDF(crm: number) {
       autoTable(doc, {
         startY: currentY,
         head: [["Nome", "Descrição", "Valor"]],
-        body: proposta.servicosExtras.map((s: any) => [s.nome, s.descricao, s.valor]),
+        body: proposta.servicosExtras.map((s: ItemServicoExtra) => [s.nome, s.descricao, s.valor]),
         headStyles: { fillColor: accentColor, textColor: 255 },
         alternateRowStyles: { fillColor: [245, 247, 250] },
       });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
+      // 🔹 Usa o tipo já definido para lastAutoTable
+      currentY = doc.lastAutoTable?.finalY ?? currentY;
+      currentY += 10;
     }
 
     // ===============================
     // 🧾 Extras
     // ===============================
     if (proposta.extras?.length) {
-      doc.setFontSize(13);
-      doc.setFont("helvetica", "bold");
-      doc.text("Extras", 10, currentY);
-      currentY += 4;
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text("Extras", 10, currentY);
+    currentY += 4;
 
-      autoTable(doc, {
-        startY: currentY,
-        head: [["Código", "Nome", "Qtd", "Valor"]],
-        body: proposta.extras.map((i: any) => [i.codigo, i.nome, i.qtd, i.valor]),
-        headStyles: { fillColor: "#602613", textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-      });
+    autoTable(doc, {
+      startY: currentY,
+      head: [["Código", "Nome", "Qtd", "Valor"]],
+      body: proposta.extras.map((i: ItemExtra) => [i.nome, i.qtd, i.valor]),
+      headStyles: { fillColor: "#602613", textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+    });
 
-      currentY = (doc as any).lastAutoTable.finalY + 10;
-    }
+    // 🔹 agora o TypeScript reconhece lastAutoTable
+    currentY = doc.lastAutoTable?.finalY ?? currentY;
+    currentY += 10;
+  }
 
     // ===============================
     // 🗒️ Observações
@@ -2205,7 +2227,7 @@ async function handleGerarPDF(crm: number) {
 
                                       <div>
                                         {(() => {
-                                          let datasLista: any[] = [];
+                                          let datasLista: CamposDataHora[] = [];
 
                                           try {
                                             datasLista = Array.isArray(selectedProposta.datasLista)
