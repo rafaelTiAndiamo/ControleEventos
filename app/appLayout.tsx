@@ -1,7 +1,7 @@
 "use client";
 
-import Navbar from "./navbar";
-import Sidebar from "./sidebar";
+import Navbar from "../components/navbar";
+import Sidebar from "../components/sidebar";
 import { useUser } from "@/components/ui/UserContext";
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
