@@ -1,9 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { onAuthStateChanged, User, signInWithEmailAndPassword } from "firebase/auth";
+// hooks/useAuthUser.ts
+import { useState, useEffect } from "react";
+import { onAuthStateChanged, User, signInWithEmailAndPassword, Auth } from "firebase/auth";
 import { auth, db } from "../lib/firebaseConfig";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, Firestore } from "firebase/firestore";
 
 interface UserData {
   uid: string;
@@ -19,6 +18,15 @@ export function useAuthUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth || !db) {
+      console.error("Firebase não inicializado (auth ou db é null)");
+      setLoading(false);
+      return;
+    }
+
+    // Afirmar que db é Firestore (TypeScript já sabe que não é null após a verificação)
+    const firestore: Firestore = db;
+
     console.log("useAuthUser: Iniciando onAuthStateChanged");
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("useAuthUser: onAuthStateChanged chamado", { firebaseUser: !!firebaseUser });
@@ -33,7 +41,7 @@ export function useAuthUser() {
 
       try {
         console.log("useAuthUser: Buscando dados do usuário no Firestore", { email: firebaseUser.email });
-        const usersRef = collection(db, "users");
+        const usersRef = collection(firestore, "users"); // Linha 41
         const q = query(usersRef, where("email", "==", firebaseUser.email));
         const querySnap = await getDocs(q);
 
@@ -49,7 +57,7 @@ export function useAuthUser() {
         const groupName = userDoc.group_acess || "";
         console.log("useAuthUser: Dados do usuário encontrados", { groupName });
 
-        const groupDocRef = doc(db, "group_acess", groupName);
+        const groupDocRef = doc(firestore, "group_acess", groupName); // Linha 57
         const groupSnap = await getDoc(groupDocRef);
 
         const pageAccess: string[] =
@@ -60,7 +68,7 @@ export function useAuthUser() {
           console.warn(`useAuthUser: Grupo ${groupName} não encontrado no Firestore`);
         }
 
-        const userDataObj = {
+        const userDataObj: UserData = {
           uid: firebaseUser.uid,
           name: userDoc.name || "",
           email: userDoc.email || "",
@@ -81,13 +89,12 @@ export function useAuthUser() {
       }
     });
 
-    // Timeout reduzido
     const timeout = setTimeout(() => {
       if (loading) {
         console.warn("useAuthUser: Timeout atingido, forçando loading=false");
         setLoading(false);
       }
-    }, 2000); // Reduzido para 2 segundos
+    }, 2000);
 
     return () => {
       console.log("useAuthUser: Desmontando onAuthStateChanged");
@@ -97,6 +104,10 @@ export function useAuthUser() {
   }, []);
 
   const login = async (email: string, password: string) => {
+    if (!auth) {
+      console.error("Firebase Auth não inicializado");
+      throw new Error("Firebase Auth não inicializado");
+    }
     console.log("useAuthUser: Iniciando login", { email });
     const result = await signInWithEmailAndPassword(auth, email, password);
     console.log("useAuthUser: Login concluído", { user: !!result.user });

@@ -1,4 +1,5 @@
-"use client";
+// components/sidebar.tsx
+"use client"; // Garante que o componente roda no lado do cliente
 
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { useUser } from "@/components/ui/UserContext";
@@ -12,10 +13,14 @@ export default function Sidebar() {
   const router = useRouter();
   const [active, setActive] = useState("Proposta");
   const { email, setUser } = useUser();
-  const [logoutError, setLogoutError] = useState<string | null>(null);
   const { userData } = useAuthUser();
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   const handleLogout = async () => {
+    if (!auth) {
+      setLogoutError("Firebase Auth não inicializado.");
+      return;
+    }
     try {
       await signOut(auth);
       setUser("", "");
@@ -27,19 +32,17 @@ export default function Sidebar() {
 
   if (!email || !userData) return null;
 
-
-
-const menuItems: { 
-  name: string; 
-  path: string; 
-  icon: FC<{ className?: string }>; // tipagem do ícone
-}[] = [
-  { name: "Proposta", path: "/formulario", icon: FileText },
-  { name: "Orçamentos", path: "/orcamentos", icon: CreditCard },
-];
+  const menuItems: {
+    name: string;
+    path: string;
+    icon: FC<{ className?: string }>;
+  }[] = [
+    { name: "Proposta", path: "/formulario", icon: FileText },
+    { name: "Orçamentos", path: "/orcamentos", icon: CreditCard },
+  ];
 
   return (
-    <aside className="fixed top-0 left-0 w-56 h-screen  bg-white dark:bg-gray-900 shadow-xl flex flex-col">
+    <aside className="fixed top-0 left-0 w-56 h-screen bg-white dark:bg-gray-900 shadow-xl flex flex-col">
       <div className="flex flex-col items-center bg-andiamo p-4 border-b border-gray-200 dark:border-gray-700">
         <UserCircle2 className="w-16 h-16 text-white dark:text-gray-300" />
         <span className="mt-2 font-semibold text-white dark:text-gray-200">
@@ -52,7 +55,7 @@ const menuItems: {
 
       <nav className="flex-1 flex flex-col mt-2">
         {menuItems.map((item) => {
-          const Icon = item.icon; // ✅ Pega o componente ícone do item
+          const Icon = item.icon;
           return (
             <button
               key={item.name}
@@ -64,7 +67,7 @@ const menuItems: {
                 active === item.name ? "bg-andiamo text-white" : ""
               }`}
             >
-              <Icon className="w-5 h-5" />  {/* Agora funciona */}
+              <Icon className="w-5 h-5" />
               <span>{item.name}</span>
             </button>
           );
