@@ -62,10 +62,12 @@ function mapPlanilhaToFormData(clienteRow: string[], itensRows: ItemPlanilha[]):
     endereco: clienteRow[7] || "",
     qtdPessoas: clienteRow[8] || "",
     datasLista,
-    dataAlteracao: clienteRow[10] || "",
-    dataCriacao: clienteRow[11] || "",
-    indicacao: clienteRow[12] || "",
-    observacao: clienteRow[13] || "",
+    indicacao: clienteRow[10] || "",
+    observacao: clienteRow[11] || "",
+    dataCriacao: clienteRow[12] || "",
+    dataAlteracao: clienteRow[13] || "",
+    
+    
     // pega da aba de itens
     operacional: { itens: itensRows.filter(i => i.tipo === "OPERACIONAL").map(i => ({ nome: i.nome!, qtd: i.qtd!, valor: i.valor!, grupo: i.grupo! })) },
     alimentacaoStaff: { itens: itensRows.filter(i => i.tipo === "ALIMENTACAOSTAFF").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valor: i.valor! })) },
@@ -124,7 +126,7 @@ export async function GET(req: NextRequest) {
       qtd: r[4],
       valor: r[5],
       cargo: r[3],
-      qtdTotal: r[6]
+      qtdTotal: r[5]
       
     }));
 

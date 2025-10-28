@@ -82,6 +82,7 @@ export async function atualizarProposta(formData: FormDataType): Promise<{ succe
     const novosItens = [
       ...formData.operacional.itens.map(i => [crm, "OPERACIONAL", "-", i.nome, i.qtd, i.valor]),
       ...formData.alimentacaoStaff.itens.map(i => [crm, "ALIMENTACAOSTAFF", i.codigo, i.nome, "-", i.valor]),
+      ...formData.extras.map(e => [crm, "EXTRAS", "-", e.nome, e.qtd, e.valor]),
       ...Object.entries(formData.equipe).flatMap(([categoria, membros]) =>
         membros.map(m => [crm, categoria, "-", m.cargo, m.qtd, m.valor])
       ),

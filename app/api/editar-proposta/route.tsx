@@ -79,7 +79,7 @@ function mapPlanilhaToFormData(clienteRow: string[], itensRows: ItemPlanilha[]):
       "EQUIPE LOGISTICA": itensRows.filter(i => i.tipo === "EQUIPE LOGISTICA").map(i => ({ cargo: i.cargo!, qtd: i.qtd!, valor: i.valor! })),
     },
     servicosExtras: itensRows.filter(i => i.tipo === "SERVIÇOS EXTRAS").map(i => ({ nome: i.nome!, descricao: i.descricao || "", valor: i.valor!})),
-    extras: itensRows.filter(i => i.tipo === "EXTRAS").map(i => ({ nome: i.nome!, qtd: i.descricao || "", valor: i.valor!})),
+    extras: itensRows.filter(i => i.tipo === "EXTRAS").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valor: i.valor! })),
     cardapio: {
       SOFT: itensRows.filter(i => i.tipo === "SOFT").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),
       CANAPÉ: itensRows.filter(i => i.tipo === "CANAPÉ").map(i => ({ codigo: i.codigo!, nome: i.nome!, qtd: i.qtd!, grupo: i.grupo!, valorPorPax: "", qtdTotal: i.qtdTotal!  })),

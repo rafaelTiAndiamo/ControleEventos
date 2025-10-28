@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ActionButton } from "@/components/ActionButton";
 
+
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { Edit, Copy, FileText,Loader2 } from "lucide-react";
@@ -19,6 +20,22 @@ import ItemAlimentacaoInput from "./ItemAlimentacaoInput";
 import AuthWrapper from "../../components/ui/AuthWrapper";
 import { Permissao } from "@/components/ui/permission";
 import { Search } from "lucide-react";
+import {
+  Document, Packer,TextRun,
+  Paragraph,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  HeadingLevel,
+  AlignmentType,
+  SectionType,
+  ImageRun ,
+  Footer
+} from "docx";
+
+import { saveAs } from "file-saver";
 
 
 // Passos principais do wizard
@@ -445,6 +462,7 @@ function removeExtra(index: number) {
   
 
   const gerarProposta = async () => {
+
   try {
     const res = await fetch("/api/salvar-proposta", {
       method: "POST",
@@ -452,12 +470,18 @@ function removeExtra(index: number) {
       body: JSON.stringify(formData), // envia todo o formData
     });
     const data = await res.json();
-    if (data.success) alert("Proposta gerada com sucesso!");
-    else alert("Erro ao gerar proposta: " + data.message);
+    if (data.success){ 
+      alert("Proposta gerada com sucesso!") 
+      setOpen(false);
+    }else{
+      alert("Erro ao gerar proposta: " + data.message);
+    };
+
   } catch (err) {
     console.error(err);
     alert("Erro ao gerar proposta.");
   }
+
 };
 // Função chamada ao clicar em "Editar"
 async function handleEditar(crm: number) {
@@ -491,6 +515,7 @@ async function handleEditar(crm: number) {
 }
 
 function formatHora(hora?: string) {
+
   if (!hora) return "-";
   const partes = hora.split(":");
 
@@ -498,6 +523,7 @@ function formatHora(hora?: string) {
   const m = partes[1] ?? "00";
 
   return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
+  
 }
 
 function formatarData(data?: string) {
@@ -1222,6 +1248,317 @@ if (proposta.datasLista?.length > 0) {
     console.error("Erro ao gerar PDF:", err);
   } finally {
     setLoadingId(null);
+  }
+}
+
+
+async function getImageBase64(url: string) {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function handleGerarWord(crm: number) {
+  try {
+    const res = await fetch(`/api/duplicar-proposta?crm=${crm}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      console.error("Erro ao buscar proposta:", data.error);
+      return;
+    }
+
+    const proposta: FormDataType = data.proposta;
+    //====================================
+    //Tabela de equipe para documento Word
+    //====================================
+
+    const equipeParagraphs  = proposta.equipe
+      ? Object.entries(proposta.equipe).flatMap(([grupo, membros]) => [
+          new Paragraph({
+            text: grupo,
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          }),
+          ...(Array.isArray(membros)
+            ? membros.map(
+                (m: ItemEquipe) =>
+                  new Paragraph({
+                    text: `${m.cargo} - Qtd: ${m.qtd ? m.qtd : 0} - Valor: ${m.valor ? m.valor : 0} - Total: ${
+                      Number(m.qtd ? m.qtd : 0) * Number(m.valor ? m.valor : 0)
+                    }`,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                  })
+              )
+            : []),
+          new Paragraph({ text: "" }), // separação entre grupos
+        ])
+      : [];
+
+    //====================================
+    //Tabela de Operacional para documento Word
+    //====================================
+    const operacionalParagraphs = proposta.operacional?.itens?.length
+      ? [
+          new Paragraph({
+            text: "Operacional",
+            heading: HeadingLevel.HEADING_2,
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          }),
+          ...proposta.operacional.itens.map(
+            (i: ItemOperacional) =>
+              new Paragraph({
+                text: `${i.nome} - Qtd: ${i.qtd ? i.qtd : 0} - Valor: ${i.valor ? i.valor : 0}`,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 },
+              })
+          ),
+        ]
+      : [];
+
+    //====================================
+    //Tabela de Cardapio para documento Word
+    //====================================
+        const cardapioTableOrParagraphs = proposta.cardapio
+          ? (() => {
+              const grupos = Object.entries(proposta.cardapio);
+              const principais = grupos.filter(
+                ([grupo]) => grupo.toLowerCase() !== "soft" && grupo.toLowerCase() !== "ilha"
+              );
+              const especiais = grupos.filter(
+                ([grupo]) => grupo.toLowerCase() === "soft" || grupo.toLowerCase() === "ilha"
+              );
+              const ordenados = [...principais, ...especiais];
+
+              return ordenados.flatMap(([grupo, itens]) => [
+                new Paragraph({
+                  text: grupo,
+                  heading: HeadingLevel.HEADING_2,
+                  alignment: AlignmentType.CENTER,
+                }),
+                ...(Array.isArray(itens)
+                  ? itens.map(
+                      (i: ItemCardapio) =>
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          spacing: { after: 100 },
+                          children: [
+                            new TextRun({
+                              text: `${i.codigo} - ${i.nome} - Qtd por Pax: ${i.qtd ? i.qtd : 0} - Total: ${i.qtdTotal ? i.qtdTotal : 0}`,
+                              font: "Garamond",
+                            }),
+                          ],
+                        })
+                    )
+                  : []),
+                new Paragraph({ text: "" }),
+              ]);
+            })()
+          : [];
+    //====================================
+    //Tabela de Extras para documento Word
+    //====================================
+  
+        const extrasParagraphs = proposta.extras?.length
+          ? [
+              new Paragraph({
+                text: "Extras",
+                heading: HeadingLevel.HEADING_2,
+                alignment: AlignmentType.CENTER,
+              }),
+              ...proposta.extras.map(
+                (e: ItemExtra) =>
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                    children: [
+                      new TextRun({
+                        text: `${e.nome} - Qtd: ${e.qtd ? e.qtd : 0} - Valor: ${e.valor ? e.valor : 0} - Valor Total: ${Number(e.valor ? e.valor : 0) * Number(e.qtd ? e.qtd : 0)}`,
+                        font: "Garamond",
+                      }),
+                    ],
+                  })
+              ),
+              new Paragraph({ text: "" }),
+            ]
+          : [];
+    //====================================
+    //Tabela de Serviços Extras para documento Word
+    //====================================
+
+        const servicosExtrasParagraphs = proposta.servicosExtras?.length
+          ? [
+              new Paragraph({
+                text: "Serviços Extras",
+                heading: HeadingLevel.HEADING_2,
+                alignment: AlignmentType.CENTER,
+              }),
+              ...proposta.servicosExtras.map(
+                (s: ItemServicoExtra) =>
+                  new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 100 },
+                    children: [
+                      new TextRun({
+                        text: `${s.nome} - ${s.descricao} - Valor: ${s.valor ? s.valor : 0}`,
+                        font: "Garamond",
+                      }),
+                    ],
+                  })
+              ),
+              new Paragraph({ text: "" }),
+            ]
+          : [];
+    
+
+
+
+       const logoBase64 = await getImageBase64("/logobuffet.png");
+        const qrCodeBase64 = await getImageBase64("/qrcodeBuffet.jpg");
+
+        const qrFooter = new Footer({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new ImageRun({
+                  data: qrCodeBase64, // seu QR code em base64
+                  transformation: { width: 70, height: 80 },
+                  type: "jpg",
+                }),
+              ],
+            }),
+          ],
+        });
+
+        const logoImage = new ImageRun({
+          data: logoBase64,
+          transformation: { width: 250, height: 100 },
+          type: "png",
+        });
+
+        
+    const doc = new Document({
+      styles:{
+        default:{
+          document:{
+            run:{
+              font: "Garamond",
+              size: 24,
+              color: "602613",
+            },
+            paragraph:{
+              spacing:{ after: 120 },
+            }
+          }
+        }
+        
+      },
+      
+      sections: [
+                  // ===============================
+                  // 🥇 Primeira página: Cabeçalho + Dados do Cliente
+                  // ===============================
+                  {
+                    properties: { page: { margin: { top: 720, bottom: 720 } } },
+                    footers: { default: qrFooter }, // <--- rodapé aqui
+                    children: [
+                      new Paragraph({ children: [logoImage], alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+                      // Cabeçalho
+                      new Paragraph({ text: "PRÉ-PROPOSTA COMERCIAL", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
+                      new Paragraph({ text: `CRM: ${proposta.crm}`, alignment: AlignmentType.CENTER }),
+                      new Paragraph({ text: `Emitido em: ${new Date().toLocaleDateString("pt-BR")}`, alignment: AlignmentType.CENTER, spacing: { after: 2700 } }),
+
+                      // Dados do Cliente
+                      new Paragraph({ text: "Dados do Cliente", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+                      ...[
+                        ["Cliente", proposta.cliente],
+                        ["CNPJ", proposta.cnpj],
+                        ["Email", proposta.email],
+                        ["Telefone", proposta.telefone],
+                        ["Evento", proposta.evento],
+                        ["Endereço", proposta.endereco],
+                        ["Qtd. Pessoas", proposta.qtdPessoas],
+                        ["Indicação", proposta.indicacao],
+                        ["Data Criação", proposta.dataCriacao],
+                        ["Data Alteração", formatarData(proposta.dataAlteracao)],
+                        ["Menus", proposta.menus?.join(", ")],
+                      ].filter(([_, v]) => v).map(([label, valor]) =>
+                        new Paragraph({ text: `${label}: ${valor}`, alignment: AlignmentType.CENTER, spacing: { after: 100 } })
+                      ),
+
+                      // Datas do Evento
+                      ...(proposta.datasLista?.length
+                        ? [
+                            new Paragraph({ text: "Datas do Evento", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+                            ...proposta.datasLista.map(d =>
+                              new Paragraph({ text: `${formatarData(d.data) ?? "-"}: ${d.horaInicial ?? "-"} às ${d.horaFinal ?? "-"}`, alignment: AlignmentType.CENTER, spacing: { after: 100 } })
+                            ),
+                          ]
+                        : []),
+                        ...(proposta.observacao
+                        ? [
+                            new Paragraph({ text: "Observações", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+                            new Paragraph({ text: proposta.observacao, alignment: AlignmentType.CENTER }),
+                          ]
+                        : []),
+                        
+                    ],
+                  },
+
+                  // ===============================
+                  // 🥈 Segunda página: Cardápio + Extras
+                  // ===============================
+                  {
+                    properties: { type: SectionType.NEXT_PAGE },
+                    children: [
+                      ...(proposta.cardapio ? [...cardapioTableOrParagraphs] : []),
+                      
+                      
+                    ],
+                  },
+
+                  // ===============================
+                  // 🥉 Terceira página: Operacional + Serviços Extras
+                  // ===============================
+                  {
+                    properties: { type: SectionType.NEXT_PAGE },
+                    children: [
+                      ...(extrasParagraphs?.length ? [...extrasParagraphs] : []),
+                      ...(operacionalParagraphs?.length ? [...operacionalParagraphs]: []),
+                      ...(proposta.servicosExtras?.length ? [...servicosExtrasParagraphs] : []),
+                      
+                    ],
+                  },
+
+                  // ===============================
+                  // 🏅 Quarta página: Equipe + Observações
+                  // ===============================
+                  {
+                    properties: { type: SectionType.NEXT_PAGE },
+                    children: [
+                      ...(equipeParagraphs?.length ? [...equipeParagraphs] : []),
+                      
+                      
+                    ],
+                  },
+                ]
+
+
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Proposta-${proposta.crm}.docx`);
+  } catch (err) {
+    console.error("Erro ao gerar Word:", err);
   }
 }
 
@@ -2137,7 +2474,7 @@ if (proposta.datasLista?.length > 0) {
 
                             {/* 🔽 Novo botão PDF */}
                             <ActionButton
-                              onClick={() => handleGerarPDF(Number(p.crm))}
+                              onClick={() => handleGerarWord(Number(p.crm))}
                               title="PDF"
                               icon={<FileText className="w-5 h-5 text-red-700" />}
                               loading={loadingId === p.crm}
