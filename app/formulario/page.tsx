@@ -1272,35 +1272,53 @@ async function handleGerarWord(crm: number) {
       console.error("Erro ao buscar proposta:", data.error);
       return;
     }
-
+    const colorNew= "9f672f";
     const proposta: FormDataType = data.proposta;
     //====================================
     //Tabela de equipe para documento Word
     //====================================
 
-    const equipeParagraphs  = proposta.equipe
-      ? Object.entries(proposta.equipe).flatMap(([grupo, membros]) => [
-          new Paragraph({
-            text: grupo,
-            heading: HeadingLevel.HEADING_2,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-          }),
-          ...(Array.isArray(membros)
-            ? membros.map(
-                (m: ItemEquipe) =>
-                  new Paragraph({
-                    text: `${m.cargo} - Qtd: ${m.qtd ? m.qtd : 0} - Valor: ${m.valor ? m.valor : 0} - Total: ${
-                      Number(m.qtd ? m.qtd : 0) * Number(m.valor ? m.valor : 0)
-                    }`,
-                    alignment: AlignmentType.CENTER,
-                    spacing: { after: 100 },
-                  })
-              )
-            : []),
-          new Paragraph({ text: "" }), // separação entre grupos
-        ])
-      : [];
+    const equipeParagraphs = proposta.equipe
+  ? Object.entries(proposta.equipe).flatMap(([grupo, membros]) => {
+      // ✅ Filtra apenas membros com quantidade válida (> 0)
+      const membrosValidos = Array.isArray(membros)
+        ? membros.filter((m: ItemEquipe) => Number(m.qtd) > 0)
+        : [];
+
+      // Se não houver membros válidos, pula o grupo inteiro
+      if (membrosValidos.length === 0) return [];
+
+      return [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 200 },
+          children: [
+            new TextRun({
+              text: grupo,
+              bold: true,
+              font: "Garamond",
+              size: 28,
+              color: colorNew,
+            }),
+          ],
+        }),
+
+        ...membrosValidos.map(
+          (m: ItemEquipe) =>
+            new Paragraph({
+              text: `${m.cargo} - Qtd: ${m.qtd} - Valor: ${m.valor ?? 0} - Total: ${
+                Number(m.qtd) * Number(m.valor ?? 0)
+              }`,
+              alignment: AlignmentType.CENTER,
+              spacing: { after: 100 },
+            })
+        ),
+
+        new Paragraph({ text: "" }), // separação entre grupos
+      ];
+    })
+  : [];
+
 
     //====================================
     //Tabela de Operacional para documento Word
@@ -1308,11 +1326,18 @@ async function handleGerarWord(crm: number) {
     const operacionalParagraphs = proposta.operacional?.itens?.length
       ? [
           new Paragraph({
-            text: "Operacional",
-            heading: HeadingLevel.HEADING_2,
-            alignment: AlignmentType.CENTER,
-            spacing: { after: 200 },
-          }),
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                      new TextRun({
+                        text: "MATERIAL OPERACIONAL",
+                        bold: true,
+                        font: "Garamond",
+                        size: 28, // opcional
+                        color: colorNew, // ← cor personalizada (sem #)
+                      }),
+                    ],
+                  }),
           ...proposta.operacional.itens.map(
             (i: ItemOperacional) =>
               new Paragraph({
@@ -1328,41 +1353,54 @@ async function handleGerarWord(crm: number) {
     //Tabela de Cardapio para documento Word
     //====================================
         const cardapioTableOrParagraphs = proposta.cardapio
-          ? (() => {
-              const grupos = Object.entries(proposta.cardapio);
-              const principais = grupos.filter(
-                ([grupo]) => grupo.toLowerCase() !== "soft" && grupo.toLowerCase() !== "ilha"
-              );
-              const especiais = grupos.filter(
-                ([grupo]) => grupo.toLowerCase() === "soft" || grupo.toLowerCase() === "ilha"
-              );
-              const ordenados = [...principais, ...especiais];
+  ? (() => {
+      const grupos = Object.entries(proposta.cardapio);
 
-              return ordenados.flatMap(([grupo, itens]) => [
-                new Paragraph({
-                  text: grupo,
-                  heading: HeadingLevel.HEADING_2,
-                  alignment: AlignmentType.CENTER,
-                }),
-                ...(Array.isArray(itens)
-                  ? itens.map(
-                      (i: ItemCardapio) =>
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          spacing: { after: 100 },
-                          children: [
-                            new TextRun({
-                              text: `${i.codigo} - ${i.nome} - Qtd por Pax: ${i.qtd ? i.qtd : 0} - Total: ${i.qtdTotal ? i.qtdTotal : 0}`,
-                              font: "Garamond",
-                            }),
-                          ],
-                        })
-                    )
-                  : []),
-                new Paragraph({ text: "" }),
-              ]);
-            })()
-          : [];
+      const principais = grupos.filter(
+        ([grupo]) => grupo.toLowerCase() !== "soft" && grupo.toLowerCase() !== "ilha"
+      );
+      const especiais = grupos.filter(
+        ([grupo]) => grupo.toLowerCase() === "soft" || grupo.toLowerCase() === "ilha"
+      );
+      const ordenados = [...principais, ...especiais];
+
+      return ordenados.flatMap(([grupo, itens]) => {
+        // ✅ Verifica se o grupo tem produtos válidos
+        if (!Array.isArray(itens) || itens.length === 0) return [];
+
+        return [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            children: [
+              new TextRun({
+                text: grupo,
+                bold: true,
+                font: "Garamond",
+                size: 28,
+                color: colorNew,
+              }),
+            ],
+          }),
+          ...itens.map(
+            (i: ItemCardapio) =>
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 },
+                children: [
+                  new TextRun({
+                    text: `${i.codigo} - ${i.nome} - Qtd por Pax: ${i.qtd ?? 0} - Total: ${i.qtdTotal ?? 0}`,
+                    font: "Garamond",
+                  }),
+                ],
+              })
+          ),
+          new Paragraph({ text: "" }),
+        ];
+      });
+    })()
+  : [];
+
     //====================================
     //Tabela de Extras para documento Word
     //====================================
@@ -1370,10 +1408,18 @@ async function handleGerarWord(crm: number) {
         const extrasParagraphs = proposta.extras?.length
           ? [
               new Paragraph({
-                text: "Extras",
-                heading: HeadingLevel.HEADING_2,
-                alignment: AlignmentType.CENTER,
-              }),
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                      new TextRun({
+                        text: "EXTRAS",
+                        bold: true,
+                        font: "Garamond",
+                        size: 28, // opcional
+                        color: colorNew, // ← cor personalizada (sem #)
+                      }),
+                    ],
+                  }),
               ...proposta.extras.map(
                 (e: ItemExtra) =>
                   new Paragraph({
@@ -1397,10 +1443,18 @@ async function handleGerarWord(crm: number) {
         const servicosExtrasParagraphs = proposta.servicosExtras?.length
           ? [
               new Paragraph({
-                text: "Serviços Extras",
-                heading: HeadingLevel.HEADING_2,
-                alignment: AlignmentType.CENTER,
-              }),
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 200 },
+                    children: [
+                      new TextRun({
+                        text: "SERVIÇOS EXTRAS",
+                        bold: true,
+                        font: "Garamond",
+                        size: 28, // opcional
+                        color: colorNew, // ← cor personalizada (sem #)
+                      }),
+                    ],
+                  }),
               ...proposta.servicosExtras.map(
                 (s: ItemServicoExtra) =>
                   new Paragraph({
@@ -1445,15 +1499,16 @@ async function handleGerarWord(crm: number) {
           type: "png",
         });
 
-        
+    
     const doc = new Document({
       styles:{
         default:{
           document:{
             run:{
               font: "Garamond",
-              size: 24,
+              size: 20,
               color: "602613",
+              bold: true
             },
             paragraph:{
               spacing:{ after: 120 },
@@ -1475,10 +1530,22 @@ async function handleGerarWord(crm: number) {
                       // Cabeçalho
                       new Paragraph({ text: "PRÉ-PROPOSTA COMERCIAL", heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 } }),
                       new Paragraph({ text: `CRM: ${proposta.crm}`, alignment: AlignmentType.CENTER }),
-                      new Paragraph({ text: `Emitido em: ${new Date().toLocaleDateString("pt-BR")}`, alignment: AlignmentType.CENTER, spacing: { after: 2700 } }),
+                      new Paragraph({ text: `Emitido em: ${new Date().toLocaleDateString("pt-BR")}`, alignment: AlignmentType.CENTER, spacing: { after: 2300 } }),
 
                       // Dados do Cliente
-                      new Paragraph({ text: "Dados do Cliente", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 200 },
+                        children: [
+                          new TextRun({
+                            text: "Dados do Cliente",
+                            bold: true,
+                            font: "Garamond",
+                            size: 28, // opcional
+                            color: colorNew, // ← cor personalizada (sem #)
+                          }),
+                        ],
+                      }),
                       ...[
                         ["Cliente", proposta.cliente],
                         ["CNPJ", proposta.cnpj],
@@ -1498,7 +1565,20 @@ async function handleGerarWord(crm: number) {
                       // Datas do Evento
                       ...(proposta.datasLista?.length
                         ? [
-                            new Paragraph({ text: "Datas do Evento", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER, spacing: { after: 200 } }),
+                            
+                            new Paragraph({
+                              alignment: AlignmentType.CENTER,
+                              spacing: { after: 200 },
+                              children: [
+                                new TextRun({
+                                  text: "Datas do Evento",
+                                  bold: true,
+                                  font: "Garamond",
+                                  size: 28, // opcional
+                                  color: colorNew, // ← cor personalizada (sem #)
+                                }),
+                        ],
+                      }),
                             ...proposta.datasLista.map(d =>
                               new Paragraph({ text: `${formatarData(d.data) ?? "-"}: ${d.horaInicial ?? "-"} às ${d.horaFinal ?? "-"}`, alignment: AlignmentType.CENTER, spacing: { after: 100 } })
                             ),
@@ -1506,7 +1586,20 @@ async function handleGerarWord(crm: number) {
                         : []),
                         ...(proposta.observacao
                         ? [
-                            new Paragraph({ text: "Observações", heading: HeadingLevel.HEADING_2, alignment: AlignmentType.CENTER }),
+                            
+                            new Paragraph({
+                              alignment: AlignmentType.CENTER,
+                              spacing: { after: 200 },
+                              children: [
+                                new TextRun({
+                                  text: "Observações",
+                                  bold: true,
+                                  font: "Garamond",
+                                  size: 28, // opcional
+                                  color: colorNew, // ← cor personalizada (sem #)
+                                }),
+                        ],
+                      }),
                             new Paragraph({ text: proposta.observacao, alignment: AlignmentType.CENTER }),
                           ]
                         : []),
@@ -1525,9 +1618,20 @@ async function handleGerarWord(crm: number) {
                       
                     ],
                   },
+                  // ===============================
+                  // 🏅 Terceira página: Equipe + Observações
+                  // ===============================
+                  {
+                    properties: { type: SectionType.NEXT_PAGE },
+                    children: [
+                      ...(equipeParagraphs?.length ? [...equipeParagraphs] : []),
+                      
+                      
+                    ],
+                  },
 
                   // ===============================
-                  // 🥉 Terceira página: Operacional + Serviços Extras
+                  // 🥉 Quarta página: Operacional + Serviços Extras
                   // ===============================
                   {
                     properties: { type: SectionType.NEXT_PAGE },
@@ -1539,17 +1643,7 @@ async function handleGerarWord(crm: number) {
                     ],
                   },
 
-                  // ===============================
-                  // 🏅 Quarta página: Equipe + Observações
-                  // ===============================
-                  {
-                    properties: { type: SectionType.NEXT_PAGE },
-                    children: [
-                      ...(equipeParagraphs?.length ? [...equipeParagraphs] : []),
-                      
-                      
-                    ],
-                  },
+                  
                 ]
 
 
